@@ -7,7 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
 <body class="bg-green-50 text-green-900 p-6 max-w-md mx-auto text-center">
-  <h1 class="text-4xl font-bold mb-4">✅ Thank you for your order!</h1>
+  <h1 id="order-confirmed" class="text-4xl font-bold mb-4">✅ Thank you for your order!</h1>
   <div class="mb-4">
     <label for="language-switcher" class="font-semibold mr-2">Language:</label>
     <select id="language-switcher" class="border rounded p-1">
@@ -16,7 +16,7 @@
       <option value="ar">العربية</option>
     </select>
   </div>
-  <p class="mb-6">Your order has been received and is being prepared.</p>
+  <p id="order-received" class="mb-6">Your order has been received and is being prepared.</p>
 
   <div id="order-summary" class="bg-white rounded shadow p-4 text-left"></div>
 
@@ -24,29 +24,57 @@
     Done
   </button>
 
+  <script src="lang.js"></script>
   <script>
-    // Escape HTML utility
     function escapeHTML(str) {
       return String(str).replace(/[<>&"']/g, s => ({
         "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;"
       }[s]));
     }
 
-    // Retrieve order data from localStorage
-    const order = JSON.parse(localStorage.getItem("lastOrder"));
-    const summaryDiv = document.getElementById("order-summary");
+    // Language switching
+    function applyLanguage(lang) {
+      const t = translations[lang];
+      if (!t) return;
+      document.getElementById("order-confirmed").textContent = t.orderConfirmed;
+      document.getElementById("order-received").textContent = t.orderReceived;
+      document.getElementById("done-btn").textContent = t.done;
+      // Optionally update summary static texts below if needed
+      // For summary, update after rendering order as well
+      renderOrderSummary(lang);
+    }
 
-    if (!order) {
-      summaryDiv.innerHTML = "<p>No order data found.</p>";
-    } else {
-      let html = `<p><strong>Table Number:</strong> ${escapeHTML(order.table)}</p>`;
-      html += "<h3 class='font-semibold mt-4 mb-2'>Items:</h3><ul>";
-      order.items.forEach(item => {
-        html += `<li>${item.qty} x ${escapeHTML(item.name)} (${item.price} MAD each)</li>`;
+    function renderOrderSummary(lang) {
+      const t = translations[lang] || translations["en"];
+      const order = JSON.parse(localStorage.getItem("lastOrder"));
+      const summaryDiv = document.getElementById("order-summary");
+
+      if (!order) {
+        summaryDiv.innerHTML = `<p>${t.noOrderData}</p>`;
+      } else {
+        let html = `<p><strong>${t.tableLabel}</strong> ${escapeHTML(order.table)}</p>`;
+        html += `<h3 class='font-semibold mt-4 mb-2'>${t.items}</h3><ul>`;
+        order.items.forEach(item => {
+          html += `<li>${item.qty} x ${escapeHTML(item.name)} (${item.price} MAD each)</li>`;
+        });
+        html += "</ul>";
+        html += `<p class="font-bold mt-4">${t.totalLabel} ${order.total} MAD</p>`;
+        summaryDiv.innerHTML = html;
+      }
+    }
+
+    // Initial render
+    let currentLang = localStorage.getItem("lang") || "en";
+    applyLanguage(currentLang);
+
+    // Language dropdown
+    const switcher = document.getElementById("language-switcher");
+    if (switcher) {
+      switcher.value = currentLang;
+      switcher.addEventListener("change", (e) => {
+        localStorage.setItem("lang", e.target.value);
+        applyLanguage(e.target.value);
       });
-      html += "</ul>";
-      html += `<p class="font-bold mt-4">Total: ${order.total} MAD</p>`;
-      summaryDiv.innerHTML = html;
     }
 
     // Only clear lastOrder after user clicks "Done"
@@ -54,35 +82,6 @@
       localStorage.removeItem("lastOrder");
       window.location.href = "index.html";
     });
-  </script>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="firebase.js"></script>
-  <script src="lang.js"></script>
-  <script>
-    // Language switcher logic
-    let currentLang = localStorage.getItem("lang") || "en";
-    const lang = translations[currentLang];
-
-    if (document.getElementById("menu-title")) {
-      document.getElementById("menu-title").textContent = lang.menuTitle;
-    }
-    if (document.getElementById("place-order")) {
-      document.getElementById("place-order").textContent = lang.placeOrder;
-    }
-    // Add more as needed...
-
-    // Set dropdown to current language
-    const switcher = document.getElementById("language-switcher");
-    if (switcher) {
-      switcher.value = currentLang;
-
-      switcher.addEventListener("change", (e) => {
-        localStorage.setItem("lang", e.target.value);
-        location.reload(); // reload page to apply language
-      });
-    }
   </script>
 </body>
 </html>
