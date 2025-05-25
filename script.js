@@ -40,6 +40,7 @@ function renderMenu() {
   });
 }
 
+
 function addToCart(name, price) {
   // Check if item already in cart
   const existing = cart.find(item => item.name === name);

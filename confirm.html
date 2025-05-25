@@ -7,7 +7,6 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
 <body class="bg-green-50 text-green-900 p-6 max-w-md mx-auto text-center">
-
   <h1 class="text-4xl font-bold mb-4">✅ Thank you for your order!</h1>
   <p class="mb-6">Your order has been received and is being prepared.</p>
 
@@ -42,5 +41,32 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
+<script src="lang.js"></script>
+<script>
+  // Get saved language or default to English
+  let currentLang = localStorage.getItem("lang") || "en";
+  const lang = translations[currentLang];
+
+  // Update text on the page — replace this with your actual element IDs!
+  // Example for index.html:
+  if (document.getElementById("menu-title")) {
+    document.getElementById("menu-title").textContent = lang.menuTitle;
+  }
+  if (document.getElementById("place-order")) {
+    document.getElementById("place-order").textContent = lang.placeOrder;
+  }
+  // Add more as needed...
+
+  // Set dropdown to current language
+  const switcher = document.getElementById("language-switcher");
+  if (switcher) {
+    switcher.value = currentLang;
+
+    switcher.addEventListener("change", (e) => {
+      localStorage.setItem("lang", e.target.value);
+      location.reload(); // reload page to apply language
+    });
+  }
+</script>
 </body>
 </html>
