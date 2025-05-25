@@ -92,7 +92,11 @@ document.getElementById("place-order").addEventListener("click", async () => {
 
   // Send order to Firebase
   try {
-    await db.ref("orders").push(orderData);
+    // DEBUG: log what we're sending
+    console.log("Writing to Firebase:", orderData);
+    let ref = db.ref("orders");
+    let result = await ref.push(orderData);
+    console.log("Order pushed with key:", result.key);
     cart = [];
     localStorage.removeItem("cart");
     window.location.href = "confirm.html";
