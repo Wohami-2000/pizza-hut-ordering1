@@ -10,5 +10,4 @@ var firebaseConfig = {
 };
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-// Make the database reference available globally
 var db = firebase.database();

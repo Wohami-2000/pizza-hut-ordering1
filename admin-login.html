@@ -31,7 +31,6 @@
 
       auth.signInWithEmailAndPassword(email, password)
         .then(() => {
-          // Success: Redirect to admin panel
           window.location.href = "admin.html";
         })
         .catch(error => {
@@ -39,6 +38,5 @@
         });
     });
   </script>
-
 </body>
 </html>

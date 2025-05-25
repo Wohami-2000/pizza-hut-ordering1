@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width" />
   <title>Pizza Hut - Admin</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <!-- Only include style.css if it actually exists in your project. Otherwise, remove the next line. -->
-  <!-- <link rel="stylesheet" href="style.css" /> -->
+  <!-- Remove style.css line if file doesn't exist -->
 </head>
 <body class="p-4 max-w-xl mx-auto text-gray-900">
 <button onclick="window.print()" style="background:#3182ce;color:white;padding:10px;border:none;border-radius:5px;margin-bottom:20px;cursor:pointer;">
@@ -20,14 +19,12 @@
   <div id="orders" class="space-y-4"></div>
   <div id="pagination" class="flex justify-center mt-4 space-x-2"></div>
 
-  <!-- Firebase (ORDER MATTERS!) -->
+  <!-- Firebase: ORDER MATTERS! -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase.js"></script>
   <script>
-    // DO NOT declare 'var db' or 'var firebaseConfig' here; it's in firebase.js
-
     const auth = firebase.auth();
     const container = document.getElementById("orders");
     const paginationDiv = document.getElementById("pagination");
@@ -84,7 +81,6 @@
       renderOrdersPage(page);
     };
 
-    // Protect admin page — require login every session
     auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
     auth.onAuthStateChanged(user => {
       if (!user) {
@@ -102,7 +98,6 @@
       }
     });
 
-    // Logout button
     document.getElementById("logout").addEventListener("click", () => {
       auth.signOut().then(() => {
         window.location.href = "admin-login.html";
