@@ -16,10 +16,11 @@
   </div>
 
   <div id="orders" class="space-y-4"></div>
+  <div id="pagination" class="flex justify-center mt-4 space-x-2"></div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> <!-- Auth -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase.js"></script>
 
@@ -27,37 +28,74 @@
     const auth = firebase.auth();
     const db = firebase.database();
     const container = document.getElementById("orders");
+    const paginationDiv = document.getElementById("pagination");
 
-    // Protect admin page — redirect if not logged in
+    function escapeHTML(str) {
+      return String(str).replace(/[<>&"']/g, s => ({
+        "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;"
+      }[s]));
+    }
+
+    let allOrders = [];
+    let currentPage = 1;
+    const ORDERS_PER_PAGE = 20;
+
+    function renderOrdersPage(page) {
+      container.innerHTML = "";
+      if (!allOrders.length) {
+        container.innerHTML = "<p>No orders yet.</p>";
+        paginationDiv.innerHTML = "";
+        return;
+      }
+      const start = (page - 1) * ORDERS_PER_PAGE;
+      const end = start + ORDERS_PER_PAGE;
+      const pageOrders = allOrders.slice(start, end);
+
+      pageOrders.forEach(({id, order}) => {
+        const div = document.createElement("div");
+        div.className = "bg-white rounded shadow p-4";
+
+        div.innerHTML = `
+          <h2 class="font-bold text-lg mb-2">Table #${escapeHTML(order.table)}</h2>
+          <ul class="mb-2">
+            ${order.items.map(i => `<li>${i.qty} x ${escapeHTML(i.name)} (${i.price} MAD)</li>`).join("")}
+          </ul>
+          <p class="font-semibold">Total: ${order.total} MAD</p>
+          <p>Status: <span class="font-bold">${order.status ? escapeHTML(order.status) : "pending"}</span></p>
+          <p class="text-sm text-gray-500">${new Date(order.timestamp).toLocaleString()}</p>
+        `;
+
+        container.appendChild(div);
+      });
+
+      // Pagination controls
+      const totalPages = Math.ceil(allOrders.length / ORDERS_PER_PAGE);
+      let pagHtml = "";
+      for (let i = 1; i <= totalPages; i++) {
+        pagHtml += `<button onclick="goToPage(${i})" class="px-2 py-1 ${i===page?'bg-blue-500 text-white':'bg-gray-200'} rounded">${i}</button>`;
+      }
+      paginationDiv.innerHTML = pagHtml;
+    }
+
+    window.goToPage = function(page) {
+      currentPage = page;
+      renderOrdersPage(page);
+    };
+
+    // Protect admin page — require login every session
+    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
     auth.onAuthStateChanged(user => {
       if (!user) {
-        window.location.href = "admin-login.html";  // Redirect to login page
+        window.location.href = "admin-login.html";
       } else {
-        // User logged in → show orders
         db.ref("orders").on("value", snapshot => {
-          container.innerHTML = "";
           const data = snapshot.val();
-
           if (!data) {
-            container.innerHTML = "<p>No orders yet.</p>";
-            return;
+            allOrders = [];
+          } else {
+            allOrders = Object.entries(data).reverse().map(([id, order]) => ({id, order}));
           }
-
-          Object.entries(data).reverse().forEach(([id, order]) => {
-            const div = document.createElement("div");
-            div.className = "bg-white rounded shadow p-4";
-
-            div.innerHTML = `
-              <h2 class="font-bold text-lg mb-2">Table #${order.table}</h2>
-              <ul class="mb-2">
-                ${order.items.map(i => `<li>${i.qty} x ${i.name} (${i.price} MAD)</li>`).join("")}
-              </ul>
-              <p class="font-semibold">Total: ${order.total} MAD</p>
-              <p class="text-sm text-gray-500">${new Date(order.timestamp).toLocaleString()}</p>
-            `;
-
-            container.appendChild(div);
-          });
+          renderOrdersPage(currentPage = 1);
         });
       }
     });

@@ -1,6 +1,12 @@
 // Load cart from localStorage or empty array
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
+function escapeHTML(str) {
+  return String(str).replace(/[<>&"']/g, s => ({
+    "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;"
+  }[s]));
+}
+
 function renderCart() {
   const container = document.getElementById("cart-items");
   container.innerHTML = "";
@@ -21,7 +27,7 @@ function renderCart() {
 
     itemDiv.innerHTML = `
       <div>
-        <div class="font-semibold">${item.name}</div>
+        <div class="font-semibold">${escapeHTML(item.name)}</div>
         <div>${item.price} MAD each</div>
       </div>
       <div class="flex items-center space-x-2">
@@ -55,10 +61,18 @@ function saveCart() {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
-document.getElementById("place-order").addEventListener("click", () => {
+let isPlacingOrder = false;
+
+document.getElementById("place-order").addEventListener("click", async () => {
+  if (isPlacingOrder) return;
+  isPlacingOrder = true;
+  document.getElementById("place-order").disabled = true;
+
   const tableNumber = document.getElementById("table-number").value.trim();
   if (!tableNumber || isNaN(tableNumber) || tableNumber <= 0) {
     alert("Please enter a valid table number.");
+    document.getElementById("place-order").disabled = false;
+    isPlacingOrder = false;
     return;
   }
 
@@ -69,26 +83,26 @@ document.getElementById("place-order").addEventListener("click", () => {
     items: cart,
     total,
     timestamp: new Date().toISOString(),
+    status: "pending"
   };
 
   // Save order to localStorage temporarily (later: send to backend)
   localStorage.setItem("lastOrder", JSON.stringify(orderData));
+  localStorage.setItem("tableNumber", tableNumber);
 
   // Send order to Firebase
   try {
-  db.ref("orders").push(orderData);
-} catch (error) {
-  console.error("Firebase error:", error);
-  alert("There was a problem saving the order online.");
-}
-
-
-  // Clear cart and redirect
-  cart = [];
-  localStorage.removeItem("cart");
-  window.location.href = "confirm.html";
+    await db.ref("orders").push(orderData);
+    cart = [];
+    localStorage.removeItem("cart");
+    window.location.href = "confirm.html";
+  } catch (error) {
+    console.error("Firebase error:", error);
+    alert("There was a problem saving the order online. Please try again.");
+    document.getElementById("place-order").disabled = false;
+    isPlacingOrder = false;
+  }
 });
-
 
 // Initialize
 renderCart();

@@ -8,15 +8,30 @@
 </head>
 <body class="bg-green-50 text-green-900 p-6 max-w-md mx-auto text-center">
   <h1 class="text-4xl font-bold mb-4">✅ Thank you for your order!</h1>
+  <div class="mb-4">
+    <label for="language-switcher" class="font-semibold mr-2">Language:</label>
+    <select id="language-switcher" class="border rounded p-1">
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="ar">العربية</option>
+    </select>
+  </div>
   <p class="mb-6">Your order has been received and is being prepared.</p>
 
   <div id="order-summary" class="bg-white rounded shadow p-4 text-left"></div>
 
-  <button onclick="window.location.href='index.html'" class="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">
-    Back to Menu
+  <button id="done-btn" class="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">
+    Done
   </button>
 
   <script>
+    // Escape HTML utility
+    function escapeHTML(str) {
+      return String(str).replace(/[<>&"']/g, s => ({
+        "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;"
+      }[s]));
+    }
+
     // Retrieve order data from localStorage
     const order = JSON.parse(localStorage.getItem("lastOrder"));
     const summaryDiv = document.getElementById("order-summary");
@@ -24,49 +39,50 @@
     if (!order) {
       summaryDiv.innerHTML = "<p>No order data found.</p>";
     } else {
-      let html = `<p><strong>Table Number:</strong> ${order.table}</p>`;
+      let html = `<p><strong>Table Number:</strong> ${escapeHTML(order.table)}</p>`;
       html += "<h3 class='font-semibold mt-4 mb-2'>Items:</h3><ul>";
       order.items.forEach(item => {
-        html += `<li>${item.qty} x ${item.name} (${item.price} MAD each)</li>`;
+        html += `<li>${item.qty} x ${escapeHTML(item.name)} (${item.price} MAD each)</li>`;
       });
       html += "</ul>";
       html += `<p class="font-bold mt-4">Total: ${order.total} MAD</p>`;
       summaryDiv.innerHTML = html;
     }
 
-    // Clear lastOrder from storage (optional)
-    localStorage.removeItem("lastOrder");
+    // Only clear lastOrder after user clicks "Done"
+    document.getElementById("done-btn").addEventListener("click", () => {
+      localStorage.removeItem("lastOrder");
+      window.location.href = "index.html";
+    });
   </script>
   <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="firebase.js"></script>
-<script src="lang.js"></script>
-<script>
-  // Get saved language or default to English
-  let currentLang = localStorage.getItem("lang") || "en";
-  const lang = translations[currentLang];
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase.js"></script>
+  <script src="lang.js"></script>
+  <script>
+    // Language switcher logic
+    let currentLang = localStorage.getItem("lang") || "en";
+    const lang = translations[currentLang];
 
-  // Update text on the page — replace this with your actual element IDs!
-  // Example for index.html:
-  if (document.getElementById("menu-title")) {
-    document.getElementById("menu-title").textContent = lang.menuTitle;
-  }
-  if (document.getElementById("place-order")) {
-    document.getElementById("place-order").textContent = lang.placeOrder;
-  }
-  // Add more as needed...
+    if (document.getElementById("menu-title")) {
+      document.getElementById("menu-title").textContent = lang.menuTitle;
+    }
+    if (document.getElementById("place-order")) {
+      document.getElementById("place-order").textContent = lang.placeOrder;
+    }
+    // Add more as needed...
 
-  // Set dropdown to current language
-  const switcher = document.getElementById("language-switcher");
-  if (switcher) {
-    switcher.value = currentLang;
+    // Set dropdown to current language
+    const switcher = document.getElementById("language-switcher");
+    if (switcher) {
+      switcher.value = currentLang;
 
-    switcher.addEventListener("change", (e) => {
-      localStorage.setItem("lang", e.target.value);
-      location.reload(); // reload page to apply language
-    });
-  }
-</script>
+      switcher.addEventListener("change", (e) => {
+        localStorage.setItem("lang", e.target.value);
+        location.reload(); // reload page to apply language
+      });
+    }
+  </script>
 </body>
 </html>
