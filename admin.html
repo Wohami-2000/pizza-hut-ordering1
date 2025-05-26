@@ -8,16 +8,15 @@
 </head>
 <body class="p-4 max-w-xl mx-auto text-gray-900">
 
-  <button onclick="window.print()" style="background:#3182ce;color:white;padding:10px;border:none;border-radius:5px;margin-bottom:20px;cursor:pointer;">
-    Print Orders
-  </button>
-  
   <div class="flex justify-between items-center mb-4">
     <h1 class="text-3xl font-bold flex items-center">
       📋 Incoming Orders 
       <span id="new-order-badge" class="ml-2 bg-red-600 text-white text-sm font-semibold px-2 py-1 rounded-full hidden">New</span>
     </h1>
-    <button id="mark-as-read" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 hidden">Mark as Read</button>
+    <div>
+      <button id="mark-as-read" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 hidden mr-2">Mark as Read</button>
+      <button id="logout" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Logout</button>
+    </div>
   </div>
 
   <!-- Summary Statistics Section -->
@@ -54,6 +53,10 @@
       <option value="completed">Completed</option>
     </select>
   </div>
+
+  <button onclick="window.print()" style="background:#3182ce;color:white;padding:10px;border:none;border-radius:5px;margin-bottom:20px;cursor:pointer;">
+    Print Orders
+  </button>
 
   <div id="orders" class="space-y-4"></div>
 
@@ -93,10 +96,17 @@
     const preparingOrdersEl = document.getElementById("preparing-orders");
     const completedOrdersEl = document.getElementById("completed-orders");
 
+    const newOrderBadge = document.getElementById("new-order-badge");
+    const markAsReadBtn = document.getElementById("mark-as-read");
+    const logoutBtn = document.getElementById("logout");
+
     let allOrders = [];
     let filteredOrders = [];
     let currentPage = 1;
     const ORDERS_PER_PAGE = 20;
+
+    // Track if admin has seen pending orders (simple session storage flag)
+    let pendingOrdersSeen = sessionStorage.getItem("pendingOrdersSeen") === "true";
 
     function escapeHTML(str) {
       return String(str).replace(/[<>&"']/g, s => ({
@@ -116,6 +126,15 @@
       pendingOrdersEl.textContent = pendingOrders;
       preparingOrdersEl.textContent = preparingOrders;
       completedOrdersEl.textContent = completedOrders;
+
+      // Show new order badge and mark-as-read button if there are pending orders and admin hasn't seen them yet
+      if (pendingOrders > 0 && !pendingOrdersSeen) {
+        newOrderBadge.classList.remove("hidden");
+        markAsReadBtn.classList.remove("hidden");
+      } else {
+        newOrderBadge.classList.add("hidden");
+        markAsReadBtn.classList.add("hidden");
+      }
     }
 
     function applyFilters() {
@@ -148,16 +167,18 @@
 
         div.innerHTML = `
           <h2 class="font-bold text-lg mb-2">Table #${escapeHTML(order.table)}</h2>
+          <p class="font-semibold mb-1">Status: <span class="capitalize">${escapeHTML(order.status)}</span></p>
           <ul class="mb-2">
             ${order.items.map(i => `<li>${i.qty} x ${escapeHTML(i.name)} (${i.price} MAD)</li>`).join("")}
           </ul>
           <p class="font-semibold">Total: ${order.total} MAD</p>
-          <button onclick="viewOrderDetails('${id}')" class="text-blue-500 underline">View Details</button>
+          <button onclick="viewOrderDetails('${id}')" class="text-blue-500 underline mt-2">View Details</button>
         `;
 
         container.appendChild(div);
       });
 
+      // Pagination buttons
       const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE);
       let pagHtml = "";
 
@@ -176,10 +197,18 @@
       paginationDiv.innerHTML = pagHtml;
     }
 
+    function goToPage(page) {
+      currentPage = page;
+      renderOrdersPage(page);
+    }
+
     function viewOrderDetails(orderId) {
-      const order = allOrders.find(({ id }) => id === orderId).order;
+      const order = allOrders.find(({ id }) => id === orderId)?.order;
+      if (!order) return;
+
       modalBody.innerHTML = `
         <p><strong>Table Number:</strong> ${order.table}</p>
+        <p><strong>Status:</strong> <span class="capitalize">${escapeHTML(order.status)}</span></p>
         <p><strong>Total:</strong> ${order.total} MAD</p>
         <ul>
           ${order.items.map(i => `<li>${i.qty} x ${escapeHTML(i.name)} (${i.price} MAD)</li>`).join("")}
@@ -194,29 +223,55 @@
       modal.setAttribute("aria-hidden", "true");
     });
 
+    // Mark all pending orders as preparing
+    markAsReadBtn.addEventListener("click", () => {
+      const updates = {};
+      allOrders.forEach(({ id, order }) => {
+        if (order.status === "pending") {
+          updates[`${id}/status`] = "preparing";
+        }
+      });
+      if (Object.keys(updates).length) {
+        db.ref("orders").update(updates)
+          .then(() => {
+            pendingOrdersSeen = true;
+            sessionStorage.setItem("pendingOrdersSeen", "true");
+            newOrderBadge.classList.add("hidden");
+            markAsReadBtn.classList.add("hidden");
+          })
+          .catch(console.error);
+      }
+    });
+
+    // Logout button event
+    logoutBtn.addEventListener("click", () => {
+      auth.signOut().then(() => {
+        window.location.href = "admin-login.html";
+      });
+    });
+
+    // Set session persistence for auth
     auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+
     auth.onAuthStateChanged(user => {
       if (!user) {
         window.location.href = "admin-login.html";
       } else {
+        // Listen to orders changes
         db.ref("orders").on("value", snapshot => {
           const data = snapshot.val();
+          console.log("Orders data from Firebase:", data);
           if (!data) {
             allOrders = [];
           } else {
+            // Reverse to show newest first
             allOrders = Object.entries(data).reverse().map(([id, order]) => ({ id, order }));
           }
           filteredOrders = allOrders; // Initialize filteredOrders
           updateStatistics();
-          renderOrdersPage(currentPage = 1);
+          applyFilters(); // Apply search and filter
         });
       }
-    });
-
-    document.getElementById("logout").addEventListener("click", () => {
-      auth.signOut().then(() => {
-        window.location.href = "admin-login.html";
-      });
     });
 
     searchBar.addEventListener("input", applyFilters);
