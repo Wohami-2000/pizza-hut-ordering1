@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width" />
   <title>Pizza Hut - Admin</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+<<<<<<< HEAD
 </head>
 <body class="p-4 max-w-xl mx-auto text-gray-900">
 
@@ -12,11 +13,20 @@
     Print Orders
   </button>
   
+=======
+  <!-- Remove style.css line if file doesn't exist -->
+</head>
+<body class="p-4 max-w-xl mx-auto text-gray-900">
+<button onclick="window.print()" style="background:#3182ce;color:white;padding:10px;border:none;border-radius:5px;margin-bottom:20px;cursor:pointer;">
+  Print Orders
+</button>
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
   <div class="flex justify-between items-center mb-4">
     <h1 class="text-3xl font-bold">📋 Incoming Orders</h1>
     <button id="logout" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Logout</button>
   </div>
 
+<<<<<<< HEAD
   <!-- Summary Statistics Section -->
   <div id="statistics" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
     <div class="bg-blue-100 p-4 rounded shadow">
@@ -68,12 +78,19 @@
     </div>
   </div>
 
+=======
+  <div id="orders" class="space-y-4"></div>
+  <div id="pagination" class="flex justify-center mt-4 space-x-2"></div>
+
+  <!-- Firebase: ORDER MATTERS! -->
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase.js"></script>
   <script>
     const auth = firebase.auth();
+<<<<<<< HEAD
     const db = firebase.database();
     const container = document.getElementById("orders");
     const paginationDiv = document.getElementById("pagination");
@@ -93,6 +110,10 @@
     let filteredOrders = [];
     let currentPage = 1;
     const ORDERS_PER_PAGE = 20;
+=======
+    const container = document.getElementById("orders");
+    const paginationDiv = document.getElementById("pagination");
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
 
     function escapeHTML(str) {
       return String(str).replace(/[<>&"']/g, s => ({
@@ -100,6 +121,7 @@
       }[s]));
     }
 
+<<<<<<< HEAD
     function updateStatistics() {
       const totalOrders = allOrders.length;
       const totalRevenue = allOrders.reduce((sum, { order }) => sum + order.total, 0);
@@ -131,14 +153,30 @@
       container.innerHTML = "";
       if (!filteredOrders.length) {
         container.innerHTML = "<p>No orders found.</p>";
+=======
+    let allOrders = [];
+    let currentPage = 1;
+    const ORDERS_PER_PAGE = 20;
+
+    function renderOrdersPage(page) {
+      container.innerHTML = "";
+      if (!allOrders.length) {
+        container.innerHTML = "<p>No orders yet.</p>";
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
         paginationDiv.innerHTML = "";
         return;
       }
       const start = (page - 1) * ORDERS_PER_PAGE;
       const end = start + ORDERS_PER_PAGE;
+<<<<<<< HEAD
       const pageOrders = filteredOrders.slice(start, end);
 
       pageOrders.forEach(({ id, order }) => {
+=======
+      const pageOrders = allOrders.slice(start, end);
+
+      pageOrders.forEach(({id, order}) => {
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
         const div = document.createElement("div");
         div.className = "bg-white rounded shadow p-4";
 
@@ -148,13 +186,19 @@
             ${order.items.map(i => `<li>${i.qty} x ${escapeHTML(i.name)} (${i.price} MAD)</li>`).join("")}
           </ul>
           <p class="font-semibold">Total: ${order.total} MAD</p>
+<<<<<<< HEAD
           <button onclick="viewOrderDetails('${id}')" class="text-blue-500 underline">View Details</button>
+=======
+          <p>Status: <span class="font-bold">${order.status ? escapeHTML(order.status) : "pending"}</span></p>
+          <p class="text-sm text-gray-500">${new Date(order.timestamp).toLocaleString()}</p>
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
         `;
 
         container.appendChild(div);
       });
 
       // Pagination controls
+<<<<<<< HEAD
       const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE);
       let pagHtml = "";
 
@@ -188,6 +232,20 @@
     closeModal.addEventListener("click", () => {
       modal.classList.add("hidden");
     });
+=======
+      const totalPages = Math.ceil(allOrders.length / ORDERS_PER_PAGE);
+      let pagHtml = "";
+      for (let i = 1; i <= totalPages; i++) {
+        pagHtml += `<button onclick="goToPage(${i})" class="px-2 py-1 ${i===page?'bg-blue-500 text-white':'bg-gray-200'} rounded">${i}</button>`;
+      }
+      paginationDiv.innerHTML = pagHtml;
+    }
+
+    window.goToPage = function(page) {
+      currentPage = page;
+      renderOrdersPage(page);
+    };
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
 
     auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
     auth.onAuthStateChanged(user => {
@@ -199,10 +257,15 @@
           if (!data) {
             allOrders = [];
           } else {
+<<<<<<< HEAD
             allOrders = Object.entries(data).reverse().map(([id, order]) => ({ id, order }));
           }
           filteredOrders = allOrders; // Initialize filteredOrders
           updateStatistics(); // Update statistics whenever data changes
+=======
+            allOrders = Object.entries(data).reverse().map(([id, order]) => ({id, order}));
+          }
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
           renderOrdersPage(currentPage = 1);
         });
       }
@@ -213,10 +276,13 @@
         window.location.href = "admin-login.html";
       });
     });
+<<<<<<< HEAD
 
     // Apply filters on input and selection
     searchBar.addEventListener("input", applyFilters);
     statusFilter.addEventListener("change", applyFilters);
+=======
+>>>>>>> 5540ff45ad044c316e063a39d578d6496e26a4ae
   </script>
 </body>
 </html>
