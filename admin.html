@@ -80,7 +80,9 @@
   <script src="firebase.js"></script>
   <script>
     const auth = firebase.auth();
-    const db = firebase.database();
+    // Removed this line to avoid duplicate declaration:
+    // const db = firebase.database();
+
     const container = document.getElementById("orders");
     const paginationDiv = document.getElementById("pagination");
     const searchBar = document.getElementById("search-bar");
